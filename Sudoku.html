@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        #numbers {
+            width: 60vh;
+
+            button {
+                width: 10%;
+
+                &:first-child {
+                    margin-left: 1vh;
+                }
+            }
+        }
+
+        #table {
+            width: 60vh;
+            height: 60vh;
+
+            border-collapse: collapse;
+            table-layout: fixed;
+            user-select: none;
+
+            tbody {
+                tr {
+                    max-height: 10%;
+
+                    &:first-child {
+                        border-top: 3px solid #000;
+                    }
+
+                    &:nth-child(3n+0) {
+                        border-bottom: 3px solid #000;
+                    }
+
+                    td {
+                        border: 1px solid #ccc;
+                        text-align: center;
+
+                        &:nth-child(3n+0) {
+                            border-right: 3px solid #000;
+                        }
+
+                        &:nth-child(9n+1) {
+                            border-left: 3px solid #000;
+                        }
+
+                        grid-cell:nth-child(3n+0) {
+                            border-right: 3px solid #000;
+                        }
+
+                        &.error {
+                            background-color: red;
+                        }
+
+                        grid-cell {
+                            text-align: center;
+                            height: 6.7vh;
+                            width: 6.7vh;
+
+                            &:not([done]) {
+                                display: grid;
+                                grid-template-rows: 33% 33% 33%;
+                                grid-template-columns: 33% 33% 33%;
+
+                                & .marking {
+                                    display: none;
+                                }
+
+                                &[mark1] {
+                                    .marking:nth-child(1) {
+                                        display: block;
+                                    }
+                                }
+
+                                &[mark2] {
+                                    .marking:nth-child(2) {
+                                        display: block;
+                                    }
+                                }
+
+                                &[mark3] {
+                                    .marking:nth-child(3) {
+                                        display: block;
+                                    }
+                                }
+
+                                &[mark4] {
+                                    .marking:nth-child(4) {
+                                        display: block;
+                                    }
+                                }
+
+                                &[mark5] {
+                                    .marking:nth-child(5) {
+                                        display: block;
+                                    }
+                                }
+
+                                &[mark6] {
+                                    .marking:nth-child(6) {
+                                        display: block;
+                                    }
+                                }
+
+                                &[mark7] {
+                                    .marking:nth-child(7) {
+                                        display: block;
+                                    }
+                                }
+
+                                &[mark8] {
+                                    .marking:nth-child(8) {
+                                        display: block;
+                                    }
+                                }
+
+                                &[mark9] {
+                                    .marking:nth-child(9) {
+                                        display: block;
+                                    }
+                                }
+                            }
+
+                            &[done] {
+                                vertical-align: center;
+                                text-align: center;
+
+                                .marking {
+                                    display: none;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    </style>
+</head>
+<body>
+<template id="cell-template">
+    <span class="marking">1</span>
+    <span class="marking">2</span>
+    <span class="marking">3</span>
+    <span class="marking">4</span>
+    <span class="marking">5</span>
+    <span class="marking">6</span>
+    <span class="marking">7</span>
+    <span class="marking">8</span>
+    <span class="marking">9</span>
+</template>
+
+<table id="table">
+    <tbody></tbody>
+</table>
+
+<br>
+
+<div id="numbers">
+    <button value="1">1</button>
+    <button value="2">2</button>
+    <button value="3">3</button>
+    <button value="4">4</button>
+    <button value="5">5</button>
+    <button value="6">6</button>
+    <button value="7">7</button>
+    <button value="8">8</button>
+    <button value="9">9</button>
+</div>
+
+<script>
+  // define the grid cell
+  customElements.define("grid-cell", class extends HTMLElement {
+    constructor() {
+      super();
+
+      const template = document.querySelector("#cell-template")
+
+      this.appendChild(template.content.cloneNode(true))
+    }
+
+    set value(value) {
+      value !== "" ? this.setAttribute("done", "") : this.removeAttribute("done")
+
+      this.textContent = value
+
+      document.dispatchEvent(new CustomEvent("change"))
+    }
+  })
+
+  const table = document.querySelector("#table > tbody")
+
+  // draw the board
+  Array(9).fill(undefined).forEach((_, i) => {
+    const row = document.createElement("tr")
+
+    Array(9).fill(undefined).forEach((_, j) => {
+      const cell = document.createElement("td")
+      cell.setAttribute("tabindex", "0")
+      cell.setAttribute("data-row", (i + 1).toString())
+      cell.setAttribute("data-column", (j + 1).toString())
+      cell.setAttribute("data-square", (~~(j/3) + 1 + (3 * ~~(i / 3))).toString()) // the ~~ thing is a bitwise op that removes decimals #javascript
+
+      cell.innerHTML = `<grid-cell />`
+
+      row.appendChild(cell)
+    })
+
+    table.appendChild(row)
+  })
+
+  // parses a set of elements, and marks duplicate elements with .error
+  const dupeMarker = map => cell => {
+    if (!map.has(cell.textContent)) {
+      map.set(cell.textContent, cell)
+      return
+    }
+
+    map.get(cell.textContent).parentNode.classList.add("error")
+    cell.parentNode.classList.add("error")
+  }
+
+  document.addEventListener("change", () => {
+    table.querySelectorAll("tr td.error").forEach(e => e.classList.remove("error"))
+
+    for (let i = 1; i <= 9; i++) {
+      table.querySelectorAll(`tr td[data-row="${i}"] grid-cell[done]`).forEach(dupeMarker(new Map()))
+      table.querySelectorAll(`tr td[data-column="${i}"] grid-cell[done]`).forEach(dupeMarker(new Map()))
+      table.querySelectorAll(`tr td[data-square="${i}"] grid-cell[done]`).forEach(dupeMarker(new Map()))
+    }
+  })
+
+  const state = {
+    markingMode: false,
+    number: null,
+  }
+
+  // select the number to use
+  document.querySelectorAll("#numbers button").forEach(button => {
+    button.addEventListener("click", () => {
+      state.number = button.value
+      state.markingMode = false
+    })
+  })
+
+  // use the number (value or marking)
+  table.querySelectorAll("tr > td").forEach(cell => {
+    cell.addEventListener("click", () => {
+      if (state.number === null) {
+        return
+      }
+
+      const gridCell = cell.querySelector("grid-cell");
+      if (state.markingMode) {
+        gridCell.setAttribute(`mark${state.number}`, "")
+        return
+      }
+
+      gridCell.value = state.number
+    })
+
+    cell.addEventListener("keyup", (e) => {
+      if (e.code !== "Delete") {
+        return
+      }
+
+      cell.querySelector("grid-cell").value = ""
+    })
+  })
+
+  document.addEventListener("keyup", (e) => {
+    switch (e.code) {
+      case "Digit1":
+      case "Numpad1":
+        state.number = 1
+        break;
+      case "Digit2":
+      case "Numpad2":
+        state.number = 2
+        break;
+      case "Digit3":
+      case "Numpad3":
+        state.number = 3
+        break;
+      case "Digit4":
+      case "Numpad4":
+        state.number = 4
+        break;
+      case "Digit5":
+      case "Numpad5":
+        state.number = 5
+        break;
+      case "Digit6":
+      case "Numpad6":
+        state.number = 6
+        break;
+      case "Digit7":
+      case "Numpad7":
+        state.number = 7
+        break;
+      case "Digit8":
+      case "Numpad8":
+        state.number = 8
+        break;
+      case "Digit9":
+      case "Numpad9":
+        state.number = 9
+        break;
+    }
+
+    document.body.style.cursor = "1"
+  })
+</script>
+</body>
+</html>
